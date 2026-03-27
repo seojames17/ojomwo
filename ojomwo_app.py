@@ -926,7 +926,7 @@ def main() -> None:
           .muted { color: rgba(15,23,42,0.60); font-size: 13px; }
 
           /* Cards */
-          .card { background: #FFFFFF; border: 1px solid rgba(15,23,42,0.10); border-radius: 16px; padding: 14px 14px; box-shadow: 0 10px 24px rgba(15,23,42,0.06); }
+          .card { background: #FFFFFF; border: 1px solid rgba(15,23,42,0.10); border-radius: 16px; padding: 14px 14px; box-shadow: 0 10px 24px rgba(15,23,42,0.06); margin-bottom: 16px; }
           .card-top { }
           .kicker { font-size: 12px; color: rgba(15,23,42,0.55); }
           .title { font-size: 18px; font-weight: 800; margin-top: 4px; letter-spacing: -0.01em; }
@@ -1406,6 +1406,7 @@ def main() -> None:
                         if r_v is not None:
                             c["rating"] = r_v
                 _render_pick_card(c, i + 1, show_distance=bool(show_distance), show_address=bool(show_address))
+                st.write("")
 
         distances = [p.get("distance_m") for p in picks if p.get("distance_m") is not None]
         best_distance = min([float(x) for x in distances], default=None) if distances else None
