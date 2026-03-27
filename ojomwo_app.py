@@ -413,6 +413,26 @@ def _dedupe_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]
     return out
 
 
+def _prefer_fresh_candidates(
+    candidates: list[dict[str, Any]],
+    recent_keys: set[str],
+) -> list[dict[str, Any]]:
+    """
+    최근에 이미 보여준 후보는 뒤로 미뤄서 다양성을 높입니다.
+    (후보가 부족하면 기존 후보도 그대로 포함)
+    """
+    if not candidates:
+        return []
+    unseen: list[dict[str, Any]] = []
+    seen: list[dict[str, Any]] = []
+    for c in candidates:
+        if _candidate_key(c) in recent_keys:
+            seen.append(c)
+        else:
+            unseen.append(c)
+    return unseen + seen
+
+
 def _get_distance_m(c: dict[str, Any]) -> Optional[float]:
     d = c.get("distance_m")
     if d is None:
@@ -1099,6 +1119,8 @@ def main() -> None:
         st.session_state["last_used_rating_filter"] = False
     if "last_rating_good_count" not in st.session_state:
         st.session_state["last_rating_good_count"] = 0
+    if "recent_candidate_keys" not in st.session_state:
+        st.session_state["recent_candidate_keys"] = []
 
     params_signature = _stable_seed(
         "gps_auto",
@@ -1194,9 +1216,11 @@ def main() -> None:
     if draw_btn:
         st.session_state["round_no"] = int(st.session_state.get("round_no") or 0) + 1
         candidates, _loc = ensure_candidates()
+        recent_keys = set(st.session_state.get("recent_candidate_keys") or [])
+        candidates_for_pick = _prefer_fresh_candidates(candidates, recent_keys)
 
         picks, used_distance_filter2, used_rating_filter2, rating_good_count2 = _pick_with_optional_kakao_rating_filter(
-            candidates=candidates,
+            candidates=candidates_for_pick,
             pick_count=int(pick_count),
             top_percent=float(top_percent),
             weighted_by_distance=bool(weighted_by_distance),
@@ -1216,14 +1240,19 @@ def main() -> None:
             round_no=int(st.session_state["round_no"]),
             params_signature=params_signature_str,
         )
+        existing_recent = list(st.session_state.get("recent_candidate_keys") or [])
+        existing_recent.extend([_candidate_key(x) for x in picks])
+        st.session_state["recent_candidate_keys"] = existing_recent[-120:]
 
     if reroll_btn and not draw_btn:
         # 같은 조건에서만 리롤(후보/조건이 바뀌면 버튼을 눌러도 candidates가 다시 로드됨)
         st.session_state["round_no"] = int(st.session_state.get("round_no") or 0) + 1
         candidates, _loc = ensure_candidates()
+        recent_keys = set(st.session_state.get("recent_candidate_keys") or [])
+        candidates_for_pick = _prefer_fresh_candidates(candidates, recent_keys)
 
         picks, used_distance_filter2, used_rating_filter2, rating_good_count2 = _pick_with_optional_kakao_rating_filter(
-            candidates=candidates,
+            candidates=candidates_for_pick,
             pick_count=int(pick_count),
             top_percent=float(top_percent),
             weighted_by_distance=bool(weighted_by_distance),
@@ -1243,6 +1272,9 @@ def main() -> None:
             round_no=int(st.session_state["round_no"]),
             params_signature=params_signature_str,
         )
+        existing_recent = list(st.session_state.get("recent_candidate_keys") or [])
+        existing_recent.extend([_candidate_key(x) for x in picks])
+        st.session_state["recent_candidate_keys"] = existing_recent[-120:]
 
     if st.session_state.get("last_picks"):
         picks: list[dict[str, Any]] = st.session_state["last_picks"]
