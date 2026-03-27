@@ -1,0 +1,18 @@
+/.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Streamlit cache / logs (있을 경우)
+.streamlit/.cache/
+.streamlit_run.log
+
+# Streamlit 로컬 비밀 (예시만 커밋)
+.streamlit/secrets.toml
+
+# gh 설치/압축 해제 등 임시 바이너리
+.bin/
+
+# 이전 템플릿 데이터(대시보드에서는 사용하지 않음)
+/data/
+
